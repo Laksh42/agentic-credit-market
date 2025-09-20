@@ -70,12 +70,14 @@ function App() {
     const intent = intents.find(i => i.id === intentId)
     if (!intent) return
 
-    // Create closed deal
+    // Create closed deal with complete intent data for chat history
     const closedDeal = {
       id: intentId,
       companyName: intent.companyName,
       winningBank: winningBankName,
       amount: intent.amount,
+      duration: intent.duration,
+      purpose: intent.purpose,
       timestamp: new Date().toISOString()
     }
 
@@ -99,8 +101,24 @@ function App() {
   // Negotiation drawer handlers
   const handleOpenNegotiation = (deal) => {
     // Find the corresponding intent for this deal
-    const intent = intents.find(i => i.id === deal.intentId) || 
-                  closedDeals.find(i => i.id === deal.intentId)
+    let intent = intents.find(i => i.id === deal.intentId)
+    
+    // If not found in open intents, check closed deals and reconstruct intent data
+    if (!intent) {
+      const closedDeal = closedDeals.find(i => i.id === deal.intentId)
+      if (closedDeal) {
+        // Reconstruct intent data from closed deal for chat history viewing
+        intent = {
+          id: closedDeal.id,
+          companyName: closedDeal.companyName,
+          amount: closedDeal.amount,
+          duration: closedDeal.duration || 12, // Use stored duration or default
+          purpose: closedDeal.purpose || "Credit facility", // Use stored purpose or default
+          status: "closed",
+          timestamp: closedDeal.timestamp
+        }
+      }
+    }
     
     if (!intent) {
       console.error('Intent not found for deal:', deal)

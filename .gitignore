@@ -34,3 +34,5 @@ coverage/
 # Others
 *.swp
 *.swo
+
+*.vite

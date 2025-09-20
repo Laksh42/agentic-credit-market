@@ -64,6 +64,8 @@ export const sampleData = {
       companyName: "Manufacturing Plus",
       winningBank: "Delta Bank",
       amount: 750000,
+      duration: 18,
+      purpose: "Equipment upgrade and facility expansion",
       timestamp: "2025-09-19T15:45:00Z"
     },
     {
@@ -71,6 +73,8 @@ export const sampleData = {
       companyName: "Retail Dynamics",
       winningBank: "Alpha Bank",
       amount: 300000,
+      duration: 12,
+      purpose: "Working capital and inventory management",
       timestamp: "2025-09-19T10:30:00Z"
     }
   ]
