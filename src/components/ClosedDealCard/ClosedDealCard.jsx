@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 
-const ClosedDealCard = ({ deal }) => {
+const ClosedDealCard = ({ deal, onOpenNegotiation }) => {
   const formatAmount = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -13,14 +13,34 @@ const ClosedDealCard = ({ deal }) => {
     return format(new Date(timestamp), 'MMM dd, yyyy HH:mm')
   }
 
+  const handleCardClick = () => {
+    if (onOpenNegotiation) {
+      // Create a deal object for closed deals to view chat history
+      const dealForChat = {
+        intentId: deal.id,
+        companyName: deal.companyName,
+        bankName: deal.winningBank
+      }
+      onOpenNegotiation(dealForChat)
+    }
+  }
+
   return (
-    <div className="bg-white border border-success-200 rounded-lg overflow-hidden shadow-soft hover:shadow-medium transition-all duration-200 hover:-translate-y-1 animate-slide-up">
+    <div 
+      className="bg-white border border-success-200 rounded-lg overflow-hidden shadow-soft hover:shadow-medium transition-all duration-200 hover:-translate-y-1 animate-slide-up cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* Card Header */}
       <div className="flex justify-between items-start p-4 pb-3 border-b border-gray-100 bg-gradient-to-r from-success-50/50 to-success-100/50">
         <div className="flex flex-col">
-          <h3 className="text-base font-bold text-success-700">
-            Intent #{deal.id}
-          </h3>
+          <div className="flex justify-between items-start w-full">
+            <h3 className="text-base font-bold text-success-700">
+              Intent #{deal.id}
+            </h3>
+            <div className="text-xs text-gray-500 font-medium ml-4">
+              💬 View chat
+            </div>
+          </div>
           <span className="text-xs text-gray-600 font-medium mt-0.5">
             Closed: {formatTimestamp(deal.timestamp)}
           </span>

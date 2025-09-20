@@ -1,10 +1,32 @@
-# Agentic Credit Market
+# Agentic Credit Market with Negotiation Chat
 
-A modern React-based web application for facilitating credit line requests between companies and banks using an agentic marketplace approach with a kanban-style workflow, built with Vite and Tailwind CSS.
+A modern React-based web application for facilitating credit line requests between companies and banks using an agentic marketplace approach with a kanban-style workflow, built with Vite and Tailwind CSS. Now featuring **AI-powered negotiation chat windows** for real-time deal negotiations!
 
-## Overview
+## 🚀 New Features: AI-Powered Negotiations
 
-The Agentic Credit Market is a prototype platform that automates credit line negotiations through AI agents representing companies and banks. Companies can submit credit requests (intents) which are automatically distributed to participating banks. Banks can express interest, leading to ongoing negotiations, and deals can be finalized through the platform.
+### 💬 **Negotiation Chat Window**
+- **Side Panel Interface**: Click any ongoing deal card to open a 50% width sliding drawer
+- **Real-time LLM Integration**: Powered by OpenRouter API with GPT-4o-mini
+- **Role-based Workflows**: Different conversation flows for Banks and Companies
+- **Chat History Persistence**: All conversations stored in localStorage
+- **Multi-turn Negotiations**: Full support for offers, counter-offers, and acceptances
+
+### 🏦 **Bank Negotiation Flow**
+1. **Identity Verification**: Authenticate company identity before proceeding
+2. **Generate Offers**: AI creates tailored loan offers based on bank configuration
+3. **Counter-offers**: Respond to company negotiations with AI-generated responses
+4. **Deal Management**: Accept final terms or cancel negotiations
+
+### 🏢 **Company Negotiation Flow**
+1. **View Bank Offers**: Review detailed loan terms and conditions
+2. **AI Evaluation**: Automatically evaluate offers against company preferences
+3. **Smart Negotiations**: Generate counter-offers or accept favorable terms
+4. **Flexible Decision Making**: Manual accept/reject or AI-assisted evaluation
+
+### 🤖 **Intelligent Configuration System**
+- **Bank Profiles**: Risk tolerance, interest rates, specializations, negotiation styles
+- **Company Profiles**: Urgency levels, acceptable terms, industry context
+- **Dynamic Generation**: Auto-creates configs for new companies based on intent data
 
 ## Features
 
@@ -16,8 +38,8 @@ The Agentic Credit Market is a prototype platform that automates credit line neg
 
 ### 📋 Kanban Workflow
 - **Open Intents**: New credit requests awaiting bank interest
-- **Ongoing Deals**: Active negotiations between companies and banks
-- **Closed Deals**: Successfully completed credit agreements
+- **Ongoing Deals**: Active negotiations between companies and banks (now clickable!)
+- **Closed Deals**: Successfully completed credit agreements (view chat history!)
 
 ### 🎯 Key Functionality
 - Role-based permissions and UI customization
@@ -25,12 +47,18 @@ The Agentic Credit Market is a prototype platform that automates credit line neg
 - Form validation and error handling
 - Responsive design for desktop and mobile
 - Professional business application styling with smooth animations
+- **NEW**: LLM-powered negotiation conversations
+- **NEW**: Persistent chat history across sessions
+- **NEW**: Identity verification for enhanced security
 
 ### 💼 Business Logic
 - Intent creation with amount, duration, and purpose
 - Bank interest expression creating ongoing negotiations
+- **NEW**: Multi-round AI negotiations with offers and counter-offers
+- **NEW**: Intelligent acceptance/rejection based on company preferences
 - Automatic cleanup when deals are closed (removes competing negotiations)
 - Complete audit trail with timestamps
+- **NEW**: Chat history preservation for all completed deals
 
 ## Tech Stack
 
@@ -40,6 +68,9 @@ The Agentic Credit Market is a prototype platform that automates credit line neg
 - **State Management**: React useState (built-in state management)
 - **Date Handling**: date-fns for timestamp formatting
 - **UUID**: uuid for unique identifier generation
+- **HTTP Client**: axios for LLM API calls
+- **AI Integration**: OpenRouter API with GPT-4o-mini model
+- **Storage**: localStorage for chat history persistence
 
 ## Project Structure
 
@@ -58,15 +89,23 @@ agentic-credit-market/
 │   │   │   └── IntentCard.jsx
 │   │   ├── OngoingDealCard/
 │   │   │   └── OngoingDealCard.jsx
-│   │   └── ClosedDealCard/
-│   │       └── ClosedDealCard.jsx
+│   │   ├── ClosedDealCard/
+│   │   │   └── ClosedDealCard.jsx
+│   │   └── NegotiationDrawer/          🆕 NEW
+│   │       └── NegotiationDrawer.jsx
 │   ├── data/
-│   │   └── sampleData.js
+│   │   ├── sampleData.js
+│   │   ├── bankConfigs.js              🆕 NEW
+│   │   └── companyConfigs.js           🆕 NEW
+│   ├── services/
+│   │   └── llmService.js               🆕 NEW
 │   ├── utils/
-│   │   └── rolePermissions.js
+│   │   ├── rolePermissions.js
+│   │   └── chatStorage.js              🆕 NEW
 │   ├── App.jsx
 │   ├── main.jsx
 │   └── index.css
+├── .env.example                        🆕 NEW
 ├── index.html
 ├── package.json
 ├── vite.config.js
@@ -81,13 +120,12 @@ agentic-credit-market/
 
 - Node.js (version 16 or higher)
 - npm (comes with Node.js)
+- **OpenRouter API Key** (for AI negotiations)
 
 ### Installation
 
 1. **Clone or download the project files**
    ```bash
-   # If you have the project as a ZIP, extract it
-   # If it's in a repository:
    git clone <repository-url>
    cd agentic-credit-market
    ```
@@ -97,12 +135,28 @@ agentic-credit-market/
    npm install
    ```
 
-3. **Start the development server**
+3. **Set up environment variables**
+   ```bash
+   # Copy the example file
+   cp .env.example .env
+   
+   # Edit .env and add your OpenRouter API key
+   VITE_OPENROUTER_API_KEY=your_actual_api_key_here
+   ```
+
+4. **Get OpenRouter API Key**
+   - Go to [OpenRouter.ai](https://openrouter.ai/)
+   - Sign up or log in
+   - Navigate to the Keys section
+   - Create a new API key
+   - Copy the key to your `.env` file
+
+5. **Start the development server**
    ```bash
    npm run dev
    ```
    
-   The application will start on `http://localhost:3000` and should automatically open in your browser.
+   The application will start on `http://localhost:3000`
 
 ### Available Scripts
 
@@ -110,28 +164,27 @@ agentic-credit-market/
 - `npm run build` - Build the application for production
 - `npm run preview` - Preview the production build locally
 
-### Development Setup
+## 🎮 How to Use the Negotiation Feature
 
-1. **Verify Node.js installation**
-   ```bash
-   node --version  # Should be 16.x or higher
-   npm --version   # Should be 8.x or higher
-   ```
+### 1. **Start a Negotiation**
+- Switch to **Bank** role and select a bank
+- Click on any **Ongoing Deal** card
+- The negotiation drawer slides in from the right
 
-2. **Project initialization** (if starting fresh)
-   ```bash
-   # Create new Vite project (optional - files already provided)
-   npm create vite@latest agentic-credit-market -- --template react
-   cd agentic-credit-market
-   npm install
-   ```
+### 2. **Bank Workflow**
+```
+Identity Verification → Generate Offer → Counter-offers → Accept/Cancel
+```
 
-3. **Install Tailwind CSS** (already configured)
-   ```bash
-   # These are already in package.json, but for reference:
-   npm install -D tailwindcss postcss autoprefixer
-   npm install uuid date-fns
-   ```
+### 3. **Company Workflow**
+```
+View Offers → AI Evaluation → Accept/Negotiate → Final Decision
+```
+
+### 4. **View Chat History**
+- Click on any **Closed Deal** card
+- View the complete negotiation history
+- See final terms and agreements
 
 ## Usage Guide
 
@@ -140,66 +193,67 @@ agentic-credit-market/
 1. **Company Users**
    - Select "Company" role from the header
    - Use the form to create new credit intents
-   - View all ongoing negotiations in the middle column
-   - Close deals by clicking "Close Deal" buttons in ongoing negotiations
+   - **NEW**: Click ongoing deal cards to view/participate in negotiations
+   - **NEW**: Accept offers or generate AI counter-offers
+   - Close deals by accepting bank offers in chat
 
 2. **Bank Users**  
    - Select "Bank" role and choose your bank from the dropdown
    - View open intents in the left column
    - Click "Express Interest" to start negotiations
-   - Monitor your ongoing deals in the middle column
+   - **NEW**: Click ongoing deal cards to open negotiation chat
+   - **NEW**: Verify company identity before making offers
+   - **NEW**: Generate AI-powered loan offers and counter-offers
 
 3. **Admin Users**
    - Select "Admin" role for full system access
    - Can create intents on behalf of any company
    - Can express interest as any bank
+   - **NEW**: Can participate in any negotiation as either party
    - Can delete intents and manage the entire system
    - Special admin badge (⭐) appears in the UI
 
 4. **Guest Users**
    - Select "Guest" role for read-only access
    - Can view all data but cannot perform any actions
-   - Perfect for stakeholders and observers
+   - **NEW**: Can view ongoing negotiations but cannot participate
+   - **NEW**: Can view chat history of closed deals
    - Clear visual indication (👁️) of view-only status
 
-### Workflow Process
+### Negotiation Workflow
 
-1. **Intent Creation**: Company creates a credit request with amount, duration, and purpose
-2. **Bank Interest**: Banks review open intents and express interest  
-3. **Negotiations**: Ongoing deals represent active negotiations between company and bank
-4. **Deal Closure**: Company selects winning bank, finalizing the credit agreement
-5. **Cleanup**: All other ongoing negotiations for that intent are automatically removed
+1. **Company Creates Intent**: Submit credit request with amount, duration, and purpose
+2. **Bank Expresses Interest**: Banks review and express interest in open intents
+3. **🆕 Negotiation Chat Opens**: Click ongoing deal to start AI-powered negotiations
+4. **🆕 Identity Verification**: Bank verifies company authenticity
+5. **🆕 Offer Exchange**: AI generates offers, counter-offers, and evaluations
+6. **🆕 Deal Acceptance**: Company accepts final terms through chat
+7. **Deal Completion**: Automatic cleanup and chat history preservation
 
-## Tailwind CSS Customization
+## Configuration
 
-### Custom Theme
-The application uses an extended Tailwind theme with:
-- Custom color palette (primary, success, warning, danger)
-- Custom shadows (soft, medium, strong)
-- Custom animations (fade-in, slide-up)
-- Extended spacing and typography scales
+### Bank Configurations
+Each bank has detailed configuration including:
+- Risk tolerance and interest rate preferences
+- Loan amount limits and duration preferences
+- Collateral requirements and credit score thresholds
+- Negotiation style and industry specializations
+- Decision speed and flexibility levels
 
-### Component Classes
-Predefined component classes in `src/index.css`:
-- `.btn` - Base button styling
-- `.btn-primary`, `.btn-success`, etc. - Button variants
-- `.card` - Card component styling
-- `.form-input` - Form input styling
-- `.badge` - Badge/label styling
+### Company Configurations
+Companies have profiles that include:
+- Urgency levels and acceptable interest rates
+- Collateral availability and credit scores
+- Business stage and cash flow patterns
+- Negotiation preferences and priority factors
+- Industry context and risk profiles
 
-### Responsive Design
-- Mobile-first approach using Tailwind's responsive utilities
-- Breakpoints: `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
-- Flexible grid layouts that adapt to different screen sizes
-
-### Color System
-```css
-primary: Blue tones for main actions
-success: Green tones for completed states
-warning: Orange/yellow tones for ongoing states
-danger: Red tones for destructive actions
-gray: Neutral tones for text and backgrounds
-```
+### LLM Integration
+The system uses OpenRouter API with:
+- GPT-4o-mini model for high-quality responses
+- Context-aware prompts based on configurations
+- Multi-turn conversation support
+- Error handling with retry mechanisms
 
 ## Customization
 
@@ -212,66 +266,75 @@ gray: Neutral tones for text and backgrounds
 ### Data
 - Modify sample data in `src/data/sampleData.js`
 - Add new banks to the `availableBanks` array
-- Customize role definitions and descriptions
+- Customize bank configurations in `src/data/bankConfigs.js`
+- Modify company profiles in `src/data/companyConfigs.js`
 
 ### Permissions
 - Update role permissions in `src/utils/rolePermissions.js`
 - Add new roles or modify existing capabilities
 - Customize role-based UI behavior
 
-### Components
-- All components use Tailwind utility classes
-- Add new card types by creating new components
-- Extend form fields in `IntentForm.jsx` for additional intent data
-- Use responsive utilities for mobile optimization
+### LLM Behavior
+- Modify prompts in `src/services/llmService.js`
+- Adjust model parameters and response handling
+- Customize evaluation criteria and offer generation
+- Add new negotiation strategies
+
+## Troubleshooting
+
+### Common Issues
+
+1. **LLM API Errors**
+   - Verify your OpenRouter API key is correct
+   - Check your account has sufficient credits
+   - Ensure environment variable is properly set
+
+2. **Chat History Not Persisting**
+   - Check browser localStorage is enabled
+   - Clear localStorage if experiencing issues
+   - Verify chat storage utility functions
+
+3. **Negotiation Drawer Not Opening**
+   - Ensure you've selected the correct role
+   - For bank role, make sure a bank is selected
+   - Check console for JavaScript errors
+
+4. **Tailwind styles not working**
+   - Ensure `tailwind.config.js` content paths are correct
+   - Verify `@tailwind` directives are in `src/index.css`
+   - Check that PostCSS is configured properly
+
+5. **Development server issues**
+   - Clear node_modules and reinstall dependencies
+   - Check Node.js version compatibility
+   - Ensure port 3000 is available
 
 ## Future Enhancements
 
 ### Potential Features
-- **Real-time Updates**: WebSocket integration for live updates across users
-- **Authentication**: User login and session management
-- **Database Integration**: Replace in-memory state with persistent storage
-- **Advanced Negotiations**: Terms, rates, and counter-offers
-- **Reporting**: Analytics and reporting dashboard
-- **Notifications**: Email/SMS alerts for important events
-- **Document Management**: Upload and manage loan documents
-- **Credit Scoring**: Integration with credit assessment APIs
+- **Advanced AI Models**: Support for multiple LLM providers
+- **Voice Negotiations**: Audio-based conversation support
+- **Document Generation**: Automatic contract generation from chat
+- **Analytics Dashboard**: Negotiation success rates and patterns
+- **Real-time Notifications**: WebSocket integration for live updates
+- **Multi-language Support**: International market expansion
+- **Integration APIs**: Connection with actual banking systems
+- **Advanced Security**: Enhanced identity verification methods
 
 ### Technical Improvements
 - **State Management**: Redux or Zustand for complex state
 - **Testing**: Jest and React Testing Library
 - **TypeScript**: Enhanced type safety and developer experience
-- **API Integration**: REST or GraphQL backend services
-- **Performance**: Virtualization for large lists, lazy loading
-- **Dark Mode**: Tailwind's dark mode utilities
-- **Animation Library**: Framer Motion for advanced animations
-
-## Architecture Notes
-
-### Design System
-- **Tailwind-First**: Utility-first CSS approach
-- **Component Composition**: Modular, reusable components
-- **Responsive Design**: Mobile-first with Tailwind breakpoints
-- **Color-Coded UI**: Different states use distinct color schemes
-
-### State Management
-- Centralized state in main App component
-- Props passed down to child components
-- Event handlers bubble up for state updates
-- Role-based conditional rendering throughout
-
-### Styling Approach
-- Tailwind utility classes for rapid development
-- Custom component classes for reusable patterns
-- Consistent spacing and typography system
-- Gradient backgrounds and smooth transitions
-- Professional business application aesthetics
+- **Performance**: Virtualization for large conversation lists
+- **Offline Support**: Service workers for offline functionality
+- **Database Integration**: Replace localStorage with persistent storage
 
 ## Browser Support
 
 - Modern browsers (Chrome, Firefox, Safari, Edge)
 - Mobile browsers (iOS Safari, Chrome Mobile)
 - Requires ES6+ support (most browsers from 2017+)
+- localStorage support required for chat persistence
 
 ## Contributing
 
@@ -280,32 +343,28 @@ When extending this application:
 1. Follow Tailwind's utility-first approach
 2. Use the established color and spacing system
 3. Maintain role-based permission checks
-4. Test across different roles and screen sizes
+4. Test negotiation flows across different roles
 5. Follow responsive design patterns
-6. Update this README with new features or setup changes
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Tailwind styles not working**
-   - Ensure `tailwind.config.js` content paths are correct
-   - Verify `@tailwind` directives are in `src/index.css`
-   - Check that PostCSS is configured properly
-
-2. **Development server issues**
-   - Clear node_modules and reinstall dependencies
-   - Check Node.js version compatibility
-   - Ensure port 3000 is available
-
-3. **Build issues**
-   - Run `npm run build` to check for build errors
-   - Verify all imports and dependencies are correct
+6. Update configuration files when adding new banks/companies
+7. Test LLM integration thoroughly
+8. Update this README with new features or setup changes
 
 ## License
 
 This project is designed as a prototype/demonstration application. Customize the license according to your needs.
 
+## Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+VITE_OPENROUTER_API_KEY=your_openrouter_api_key_here
+```
+
+## API Costs
+
+The application uses OpenRouter API which has usage-based pricing. The `gpt-4o-mini` model is cost-effective for this use case. Monitor your usage through the OpenRouter dashboard.
+
 ---
 
-For questions or issues, please refer to the code comments and component documentation within the source files.
+For questions or issues, please refer to the code comments and component documentation within the source files. The negotiation feature adds significant value to the credit marketplace by enabling realistic, AI-powered deal-making experiences.

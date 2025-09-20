@@ -12,7 +12,8 @@ const KanbanBoard = ({
   permissions,
   onExpressInterest,
   onCloseDeal,
-  onDeleteIntent
+  onDeleteIntent,
+  onOpenNegotiation
 }) => {
   // Filter ongoing deals based on role permissions
   const visibleOngoingDeals = ongoingDeals.filter(deal => 
@@ -131,6 +132,7 @@ const KanbanBoard = ({
                       currentRole={currentRole}
                       permissions={permissions}
                       onCloseDeal={onCloseDeal}
+                      onOpenNegotiation={onOpenNegotiation}
                     />
                   ))}
                 </div>
@@ -167,6 +169,7 @@ const KanbanBoard = ({
                     <ClosedDealCard
                       key={deal.id}
                       deal={deal}
+                      onOpenNegotiation={onOpenNegotiation}
                     />
                   ))}
                 </div>
