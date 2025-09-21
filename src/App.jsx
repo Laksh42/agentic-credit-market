@@ -92,6 +92,12 @@ function App() {
       amount: intent.amount,
       duration: intent.duration,
       purpose: intent.purpose,
+      useOfFundsDetail: intent.useOfFundsDetail,
+      esgFocusAreas: intent.esgFocusAreas,
+      impactObjectives: intent.impactObjectives,
+      collateralOffered: intent.collateralOffered,
+      requestedIncentives: intent.requestedIncentives,
+      additionalNotes: intent.additionalNotes,
       timestamp: new Date().toISOString()
     }
 
@@ -175,7 +181,9 @@ function App() {
 
         return {
           bankName: deal.bankName,
-          latestOffer: latestBankMessage?.content || 'No formalised offer from this bank yet.',
+
+          latestOffer: latestBankMessage?.rawOffer || latestBankMessage?.content || 'No formalised offer from this bank yet.',
+
           negotiationStatus: session.status || 'pending_verification',
           conversationExcerpt,
           bankConfig: bankConfigs[deal.bankName] || {}
@@ -229,6 +237,12 @@ function App() {
           amount: closedDeal.amount,
           duration: closedDeal.duration || 12, // Use stored duration or default
           purpose: closedDeal.purpose || "Credit facility", // Use stored purpose or default
+          useOfFundsDetail: closedDeal.useOfFundsDetail,
+          esgFocusAreas: closedDeal.esgFocusAreas,
+          impactObjectives: closedDeal.impactObjectives,
+          collateralOffered: closedDeal.collateralOffered,
+          requestedIncentives: closedDeal.requestedIncentives,
+          additionalNotes: closedDeal.additionalNotes,
           status: "closed",
           timestamp: closedDeal.timestamp
         }

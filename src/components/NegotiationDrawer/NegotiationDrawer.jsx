@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { format } from 'date-fns'
 import { bankConfigs } from '../../data/bankConfigs'
 import { companyConfigs, generateCompanyConfig } from '../../data/companyConfigs'
-import { 
-  verifyIdentity, 
-  generateOfferLLM, 
-  generateCounterOfferLLM, 
-  evaluateOfferLLM 
+import {
+  verifyIdentity,
+  generateOfferLLM,
+  generateCounterOfferLLM,
+  evaluateOfferLLM
 } from '../../services/llmService'
 import {
   getChatSession,
@@ -14,6 +14,7 @@ import {
   updateSessionStatus,
   generateDealId
 } from '../../utils/chatStorage'
+import ReactMarkdown from 'react-markdown'
 
 const NegotiationDrawer = ({ 
   isOpen, 
@@ -29,6 +30,38 @@ const NegotiationDrawer = ({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [dealId, setDealId] = useState(null)
+
+  const markdownComponents = useMemo(() => ({
+    p: ({ node, ...props }) => (
+      <p className="mb-2 last:mb-0 whitespace-pre-wrap" {...props} />
+    ),
+    ul: ({ node, ...props }) => (
+      <ul className="mb-2 last:mb-0 list-disc space-y-1 pl-5" {...props} />
+    ),
+    ol: ({ node, ...props }) => (
+      <ol className="mb-2 last:mb-0 list-decimal space-y-1 pl-5" {...props} />
+    ),
+    li: ({ node, ...props }) => <li className="text-sm leading-relaxed" {...props} />,
+    strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+    em: ({ node, ...props }) => <em className="italic" {...props} />,
+    a: ({ node, ...props }) => (
+      <a className="text-primary-600 underline" target="_blank" rel="noreferrer" {...props} />
+    ),
+    pre: ({ node, ...props }) => (
+      <pre className="bg-black/20 text-white/90 font-mono text-xs rounded-md p-3 overflow-x-auto mb-2" {...props} />
+    ),
+    code: ({ inline, className, children, ...props }) => (
+      inline ? (
+        <code className="bg-black/10 font-mono text-xs px-1 py-0.5 rounded" {...props}>
+          {children}
+        </code>
+      ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      )
+    )
+  }), [])
 
   // Initialize chat session when drawer opens
   useEffect(() => {
@@ -100,16 +133,66 @@ const NegotiationDrawer = ({
   const handleGenerateOffer = async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       const offer = await generateOfferLLM(intent, bankConfig, deal.bankName)
-      
+
+      const intentContext = offer.intentContext || {
+        companyName: intent.companyName,
+        request: {
+          amountUSD: intent.amount,
+          durationMonths: intent.duration,
+          purpose: intent.purpose,
+          useOfFundsDetail: intent.useOfFundsDetail,
+          esgFocusAreas: intent.esgFocusAreas,
+          impactObjectives: intent.impactObjectives,
+          collateralOffered: intent.collateralOffered,
+          requestedIncentives: intent.requestedIncentives,
+          additionalNotes: intent.additionalNotes
+        }
+      }
+
       addMessageToSession(dealId, {
         sender: deal.bankName,
-        content: offer,
-        type: 'offer'
+        content: `**Intent JSON shared with offer engine**\n\n\`\`\`json\n${JSON.stringify(intentContext, null, 2)}\n\`\`\``,
+        type: 'offer_intent_snapshot'
       })
-      
+
+      let offerPayloadString = null
+      let offerPayloadIsJson = false
+
+      if (offer.offerPayload) {
+        offerPayloadIsJson = typeof offer.offerPayload !== 'string' || offer.offerPayload.trim?.().startsWith('{')
+        offerPayloadString = typeof offer.offerPayload === 'string'
+          ? offer.offerPayload
+          : JSON.stringify(offer.offerPayload, null, 2)
+      } else if (offer.raw) {
+        offerPayloadString = offer.raw
+      }
+
+      if (offerPayloadString) {
+        const payloadContent = offerPayloadIsJson
+          ? `**Proposed Offer JSON**\n\n\`\`\`json\n${offerPayloadString}\n\`\`\``
+          : `**Proposed Offer**\n\n${offerPayloadString}`
+
+        addMessageToSession(dealId, {
+          sender: deal.bankName,
+          content: payloadContent,
+          rawOffer: offerPayloadString,
+          type: 'offer_payload'
+        })
+      }
+
+      const explanationText = offer.explanation || (offer.offerPayload ? offer.raw : '')
+
+      if (explanationText && explanationText !== offerPayloadString) {
+        addMessageToSession(dealId, {
+          sender: deal.bankName,
+          content: `**Offer Rationale & Next Steps**\n\n${explanationText}`,
+          type: 'offer_explanation'
+        })
+      }
+
       updateSessionStatus(dealId, 'in_progress')
       setChatSession(getChatSession(dealId))
     } catch (error) {
@@ -151,19 +234,29 @@ const NegotiationDrawer = ({
     setError(null)
     
     try {
-      const lastBankMessage = chatSession.messages
-        .filter(msg => msg.sender === deal.bankName)
-        .pop()
-      
+      const lastBankMessage = [...chatSession.messages]
+        .reverse()
+        .find(msg =>
+          msg.sender === deal.bankName &&
+          ['offer_payload', 'counter_offer', 'offer'].includes(msg.type)
+        )
+
       if (!lastBankMessage) {
         setError('No bank offer found to evaluate')
         return
       }
-      
+
+      const bankOfferContent = lastBankMessage.rawOffer || lastBankMessage.content
+
+      if (!bankOfferContent) {
+        setError('Latest bank message did not include offer details to evaluate')
+        return
+      }
+
       const conversation = chatSession.messages.filter(msg => msg.type !== 'system')
       const evaluation = await evaluateOfferLLM(
         intent,
-        lastBankMessage.content,
+        bankOfferContent,
         companyConfig,
         bankConfig,
         deal.bankName,
@@ -250,14 +343,19 @@ const NegotiationDrawer = ({
     return (
       <div key={message.id} className={`flex mb-4 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
         <div className={`max-w-sm px-4 py-3 rounded-lg ${
-          isOwnMessage 
-            ? 'bg-primary-500 text-white' 
+          isOwnMessage
+            ? 'bg-primary-500 text-white'
             : message.sender === deal?.bankName
               ? 'bg-success-100 text-success-800'
               : 'bg-blue-100 text-blue-800'
         }`}>
           <div className="font-semibold text-sm mb-1">{message.sender}</div>
-          <div className="text-sm leading-relaxed">{message.content}</div>
+          <ReactMarkdown
+            className="text-sm leading-relaxed space-y-2"
+            components={markdownComponents}
+          >
+            {message.content || ''}
+          </ReactMarkdown>
           <div className={`text-xs mt-1 ${isOwnMessage ? 'text-white/70' : 'text-gray-500'}`}>
             {formatTimestamp(message.timestamp)}
           </div>
@@ -294,8 +392,8 @@ const NegotiationDrawer = ({
       }
 
       if (chatSession.status === 'verified' || chatSession.status === 'in_progress') {
-        const hasOffers = chatSession.messages.some(msg => 
-          msg.sender === deal.bankName && (msg.type === 'offer' || msg.type === 'counter_offer')
+        const hasOffers = chatSession.messages.some(msg =>
+          msg.sender === deal.bankName && ['offer', 'offer_payload', 'counter_offer'].includes(msg.type)
         )
 
         return (

@@ -38,6 +38,102 @@ const safeText = (value, fallback = 'Not specified') => {
   return String(value)
 }
 
+const toArray = (value) => {
+  if (!value) return []
+  if (Array.isArray(value)) {
+    return value.filter(item => item !== null && item !== undefined && String(item).trim() !== '')
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+  }
+  return [value].filter(Boolean)
+}
+
+const buildIntentContext = (intent = {}) => {
+  return {
+    companyName: intent.companyName || 'Unknown company',
+    request: {
+      amountUSD: intent.amount,
+      durationMonths: intent.duration,
+      purpose: intent.purpose,
+      useOfFundsDetail: intent.useOfFundsDetail,
+      esgFocusAreas: toArray(intent.esgFocusAreas),
+      impactObjectives: intent.impactObjectives,
+      collateralOffered: intent.collateralOffered,
+      requestedIncentives: intent.requestedIncentives,
+      additionalNotes: intent.additionalNotes || null
+    }
+  }
+}
+
+const formatIntentSummary = (intent = {}) => {
+  const focusAreas = toArray(intent.esgFocusAreas)
+  const lines = [
+    `- Company: ${safeText(intent.companyName, 'Not specified')}`,
+    `- Requested Amount: $${formatNumber(intent.amount)}`,
+    `- Tenor: ${safeText(intent.duration, 'Not specified')} months`,
+    `- Purpose: ${safeText(intent.purpose, 'Not provided')}`
+  ]
+
+  if (intent.useOfFundsDetail) {
+    lines.push(`- Detailed Use of Funds: ${safeText(intent.useOfFundsDetail)}`)
+  }
+
+  if (focusAreas.length > 0) {
+    lines.push(`- ESG Focus Areas: ${focusAreas.join(', ')}`)
+  }
+
+  if (intent.impactObjectives) {
+    lines.push(`- Impact Objectives: ${safeText(intent.impactObjectives)}`)
+  }
+
+  if (intent.collateralOffered) {
+    lines.push(`- Collateral Offered: ${safeText(intent.collateralOffered)}`)
+  }
+
+  if (intent.requestedIncentives) {
+    lines.push(`- Incentives Requested: ${safeText(intent.requestedIncentives)}`)
+  }
+
+  if (intent.additionalNotes) {
+    lines.push(`- Additional Notes: ${safeText(intent.additionalNotes)}`)
+  }
+
+  return lines.join('\n')
+}
+
+const extractJsonObject = (text) => {
+  if (!text || typeof text !== 'string') {
+    return null
+  }
+
+  const cleaned = text
+    .replace(/```json/gi, '```')
+    .replace(/```/g, '')
+    .trim()
+
+  try {
+    return JSON.parse(cleaned)
+  } catch (error) {
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+
+    if (start !== -1 && end !== -1 && end > start) {
+      const candidate = cleaned.slice(start, end + 1)
+      try {
+        return JSON.parse(candidate)
+      } catch (nestedError) {
+        console.warn('Failed to parse model JSON block', nestedError)
+      }
+    }
+  }
+
+  return null
+}
+
 // Mock identity verification function
 export const verifyIdentity = async (companyName, intent) => {
   await new Promise(resolve => setTimeout(resolve, 1000))
@@ -47,7 +143,10 @@ export const verifyIdentity = async (companyName, intent) => {
 // Generate initial bank offer using LLM
 export const generateOfferLLM = async (intent, bankConfig = {}, bankName) => {
   try {
-    const systemPrompt = `You are the structured credit AI officer for ${bankName}. Use the bank's credit guardrails and ESG commitments to craft a loan proposal that fits the company's request.
+    const intentContext = buildIntentContext(intent)
+
+    const systemPrompt = `You are the structured credit AI officer for ${bankName}. Use the bank's credit guardrails and ESG commitments to craft a sustainability-aware proposal.
+
 
 Bank Credit & ESG Parameters:
 - Risk Appetite: ${safeText(bankConfig.riskTolerance)}
@@ -70,29 +169,38 @@ Bank Credit & ESG Parameters:
 - Impact Preference: ${safeText(bankConfig.impactPreference)}
 - Transition Finance Policy: ${safeText(bankConfig.transitionFinancePolicy)}
 
-Respond in the following format:
-Offer Summary:
-- Key highlights
-Credit Terms:
-- Loan Amount:
-- Interest Rate:
-- Tenor:
-- Collateral:
-ESG Alignment:
-- How the offer aligns with the bank's ESG requirements
-Conditions & Monitoring:
-- Key covenants or reporting expectations
-Next Steps:
-- Closing actions or timeline guidance
-Keep the tone professional and aligned with the bank's negotiation style.`
+Respond with a single JSON object matching this schema:
+{
+  "intent_context": <echo the provided intent JSON with any clarifying annotations>,
+  "bank_offer": {
+    "summary": "One paragraph overview",
+    "credit_terms": {
+      "loan_amount": "...",
+      "interest_rate": "...",
+      "tenor_months": "...",
+      "collateral_requirements": "...",
+      "fees": "...",
+      "other_terms": "..."
+    },
+    "esg_alignment": {
+      "fit": "How the offer aligns to ESG policies",
+      "incentives": "Applicable sustainability-linked incentives",
+      "monitoring": "Reporting or KPI expectations"
+    },
+    "conditions": ["..."],
+    "next_steps": "Closing guidance"
+  },
+  "offer_explanation": "Narrative justification and tone for the bank to share"
+}
+Use valid JSON with double quotes and no trailing commentary.`
 
-    const userContent = `Company Credit Request:
-- Company: ${intent.companyName}
-- Requested Amount: $${formatNumber(intent.amount)}
-- Requested Tenor: ${intent.duration} months
-- Purpose: ${intent.purpose}
+    const userContent = `Intent Summary:
+${formatIntentSummary(intent)}
 
-Produce a concise offer using the requested format.`
+Intent JSON:
+${JSON.stringify(intentContext, null, 2)}
+
+Generate the JSON response now.`
 
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
@@ -111,7 +219,21 @@ Produce a concise offer using the requested format.`
       }
     )
 
-    return response.data.choices[0].message.content
+    const responseContent = response.data.choices[0].message.content || ''
+    const parsed = extractJsonObject(responseContent)
+
+    const explanationRaw = parsed?.offer_explanation || parsed?.explanation || parsed?.rationale || ''
+
+    return {
+      intentContext: parsed?.intent_context || intentContext,
+      offerPayload: parsed?.bank_offer || parsed?.offer || null,
+      explanation: typeof explanationRaw === 'string'
+        ? explanationRaw
+        : explanationRaw
+          ? JSON.stringify(explanationRaw, null, 2)
+          : '',
+      raw: responseContent
+    }
   } catch (error) {
     console.error('OpenRouter API error:', error)
     throw new Error('Failed to generate offer. Please try again.')
@@ -147,7 +269,10 @@ Conditions & Monitoring:
 Negotiation Message:
 - 2 short paragraphs addressed to ${intent.companyName} summarising rationale.`
 
-    const userContent = `Negotiation conversation so far:
+    const userContent = `Intent context:
+${formatIntentSummary(intent)}
+
+Negotiation conversation so far:
 ${chatHistory || 'No prior messages'}
 
 Provide the counter-offer using the specified structure.`
@@ -219,10 +344,8 @@ Negotiation Message:
 - 2 short paragraphs addressed to ${bankName} summarising the rationale and, if countering, the revised terms (interest rate, tenor, collateral expectations).
 Keep the overall response concise.`
 
-    const userContent = `Original Request:
-- Amount: $${formatNumber(intent.amount)}
-- Duration: ${intent.duration} months
-- Purpose: ${intent.purpose}
+    const userContent = `Intent Summary:
+${formatIntentSummary(intent)}
 
 Conversation so far:
 ${chatHistory}
@@ -319,9 +442,7 @@ Next Steps:
 - Actionable items for the company team`
 
     const userContent = `Intent Details:
-- Requested Amount: $${formatNumber(intent.amount)}
-- Duration: ${intent.duration} months
-- Purpose: ${intent.purpose}
+${formatIntentSummary(intent)}
 
 Offers Under Review:
 ${offersOverview || 'No offers have been submitted yet.'}

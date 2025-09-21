@@ -26,6 +26,16 @@ const IntentCard = ({
     return format(new Date(timestamp), 'MMM dd, yyyy HH:mm')
   }
 
+  const formatList = (value) => {
+    if (!value) return null
+    const items = Array.isArray(value) ? value : String(value).split(',')
+    const cleaned = items
+      .map(item => (typeof item === 'string' ? item.trim() : item))
+      .filter(Boolean)
+    if (cleaned.length === 0) return null
+    return cleaned.join(', ')
+  }
+
   const handleExpressInterest = () => {
     if (currentRole === 'admin') {
       // Admin can express interest as any bank - for demo, let's use first available
@@ -137,6 +147,72 @@ const IntentCard = ({
             {intent.purpose}
           </p>
         </div>
+
+        {intent.useOfFundsDetail && (
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              Detailed Use of Funds
+            </span>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {intent.useOfFundsDetail}
+            </p>
+          </div>
+        )}
+
+        {formatList(intent.esgFocusAreas) && (
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              ESG Focus Areas
+            </span>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {formatList(intent.esgFocusAreas)}
+            </p>
+          </div>
+        )}
+
+        {intent.impactObjectives && (
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              Impact Objectives
+            </span>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {intent.impactObjectives}
+            </p>
+          </div>
+        )}
+
+        {intent.collateralOffered && (
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              Collateral / Guarantees
+            </span>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {intent.collateralOffered}
+            </p>
+          </div>
+        )}
+
+        {intent.requestedIncentives && (
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              Requested Incentives
+            </span>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {intent.requestedIncentives}
+            </p>
+          </div>
+        )}
+
+        {intent.additionalNotes && (
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              Additional Notes
+            </span>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {intent.additionalNotes}
+            </p>
+          </div>
+        )}
         
         {hasOngoingDeals && (
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-warning-100 text-warning-800 rounded-full text-xs font-semibold">
