@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-const IntentForm = ({ onCreateIntent, currentRole }) => {
+const IntentForm = ({ onCreateIntent, currentRole, selectedCompany }) => {
   const [formData, setFormData] = useState({
     companyName: '',
     amount: '',
@@ -10,14 +10,36 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState({})
 
+  const isCompanyRole = currentRole === 'company'
+
+  useEffect(() => {
+    if (isCompanyRole) {
+      setFormData(prev => ({
+        ...prev,
+        companyName: selectedCompany || ''
+      }))
+
+      if (selectedCompany) {
+        setErrors(prev => ({
+          ...prev,
+          companyName: ''
+        }))
+      }
+    }
+  }, [selectedCompany, isCompanyRole])
+
   const handleChange = (e) => {
     const { name, value } = e.target
+
+    if (name === 'companyName' && isCompanyRole) {
+      return
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
     }))
-    
-    // Clear error for this field when user starts typing
+
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -28,52 +50,54 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
 
   const validateForm = () => {
     const newErrors = {}
-    
+
     if (!formData.companyName.trim()) {
       newErrors.companyName = 'Company name is required'
     }
-    
+
+    if (isCompanyRole && !selectedCompany) {
+      newErrors.companyName = 'Select a company before creating an intent'
+    }
+
     if (!formData.amount || formData.amount <= 0) {
       newErrors.amount = 'Valid amount is required'
     }
-    
+
     if (!formData.duration || formData.duration <= 0) {
       newErrors.duration = 'Valid duration is required'
     }
-    
+
     if (!formData.purpose.trim()) {
       newErrors.purpose = 'Purpose is required'
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
-    
+
     setIsSubmitting(true)
-    
+
     try {
       await onCreateIntent({
         companyName: formData.companyName.trim(),
-        amount: parseInt(formData.amount),
-        duration: parseInt(formData.duration),
+        amount: parseInt(formData.amount, 10),
+        duration: parseInt(formData.duration, 10),
         purpose: formData.purpose.trim()
       })
-      
-      // Reset form after successful submission
+
       setFormData({
-        companyName: '',
+        companyName: isCompanyRole ? (selectedCompany || '') : '',
         amount: '',
         duration: '',
         purpose: ''
       })
-      
     } catch (error) {
       console.error('Error creating intent:', error)
     } finally {
@@ -85,7 +109,6 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
     <section className="py-6 bg-gray-50">
       <div className="max-w-7xl mx-auto px-6">
         <div className="card max-w-4xl mx-auto overflow-hidden animate-fade-in">
-          {/* Card Header */}
           <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-primary-100">
             <h2 className="text-xl font-bold text-gray-900 mb-1">
               Create New Credit Intent
@@ -94,11 +117,9 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
               Submit a new credit line request to the marketplace
             </p>
           </div>
-          
-          {/* Form */}
+
           <form className="p-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Company Name */}
               <div className="space-y-1">
                 <label htmlFor="companyName" className="form-label">
                   Company Name *
@@ -107,11 +128,12 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
                   type="text"
                   id="companyName"
                   name="companyName"
-                  className={`form-input ${errors.companyName ? 'border-danger-300 focus:ring-danger-500 focus:border-danger-500' : ''}`}
+                  className={`form-input ${errors.companyName ? 'border-danger-300 focus:ring-danger-500 focus:border-danger-500' : ''} ${isCompanyRole ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   value={formData.companyName}
                   onChange={handleChange}
-                  placeholder="Enter company name"
+                  placeholder={isCompanyRole ? 'Select a company from the header' : 'Enter company name'}
                   required
+                  readOnly={isCompanyRole}
                 />
                 {errors.companyName && (
                   <p className="text-danger-600 text-sm font-medium flex items-center gap-1">
@@ -119,9 +141,14 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
                     {errors.companyName}
                   </p>
                 )}
+                {isCompanyRole && !selectedCompany && (
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <span>ℹ️</span>
+                    Choose a company above to auto-fill this field.
+                  </p>
+                )}
               </div>
-              
-              {/* Amount */}
+
               <div className="space-y-1">
                 <label htmlFor="amount" className="form-label">
                   Amount ($) *
@@ -150,8 +177,7 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
                   </p>
                 )}
               </div>
-              
-              {/* Duration */}
+
               <div className="space-y-1">
                 <label htmlFor="duration" className="form-label">
                   Duration (months) *
@@ -175,8 +201,7 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
                   </p>
                 )}
               </div>
-              
-              {/* Purpose */}
+
               <div className="md:col-span-2 space-y-1">
                 <label htmlFor="purpose" className="form-label">
                   Purpose *
@@ -199,13 +224,12 @@ const IntentForm = ({ onCreateIntent, currentRole }) => {
                 )}
               </div>
             </div>
-            
-            {/* Form Actions */}
+
             <div className="flex justify-end pt-4 border-t border-gray-200">
               <button
                 type="submit"
                 className={`btn btn-primary min-w-40 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md hover:scale-105'}`}
-                disabled={isSubmitting}
+                disabled={isSubmitting || (isCompanyRole && !selectedCompany)}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
