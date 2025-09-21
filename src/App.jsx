@@ -181,7 +181,9 @@ function App() {
 
         return {
           bankName: deal.bankName,
+
           latestOffer: latestBankMessage?.rawOffer || latestBankMessage?.content || 'No formalised offer from this bank yet.',
+
           negotiationStatus: session.status || 'pending_verification',
           conversationExcerpt,
           bankConfig: bankConfigs[deal.bankName] || {}

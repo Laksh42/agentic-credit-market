@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { companyConfigs, generateCompanyConfig } from '../../data/companyConfigs'
 
+
 const IntentForm = ({ onCreateIntent, currentRole, selectedCompany }) => {
   const [formData, setFormData] = useState({
     companyName: '',
@@ -199,6 +200,8 @@ const IntentForm = ({ onCreateIntent, currentRole, selectedCompany }) => {
 
           <form className="p-6 space-y-8" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form className="p-6" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="space-y-1">
                 <label htmlFor="companyName" className="form-label">
                   Company Name *

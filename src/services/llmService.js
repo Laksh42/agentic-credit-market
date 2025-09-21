@@ -147,6 +147,7 @@ export const generateOfferLLM = async (intent, bankConfig = {}, bankName) => {
 
     const systemPrompt = `You are the structured credit AI officer for ${bankName}. Use the bank's credit guardrails and ESG commitments to craft a sustainability-aware proposal.
 
+
 Bank Credit & ESG Parameters:
 - Risk Appetite: ${safeText(bankConfig.riskTolerance)}
 - Preferred Interest Rate Range: ${safeText(bankConfig.preferredInterestRate)}
