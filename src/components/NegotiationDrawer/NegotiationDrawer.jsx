@@ -162,9 +162,11 @@ const NegotiationDrawer = ({
       
       const conversation = chatSession.messages.filter(msg => msg.type !== 'system')
       const evaluation = await evaluateOfferLLM(
-        intent, 
-        lastBankMessage.content, 
-        companyConfig, 
+        intent,
+        lastBankMessage.content,
+        companyConfig,
+        bankConfig,
+        deal.bankName,
         conversation
       )
       

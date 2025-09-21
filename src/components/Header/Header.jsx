@@ -1,12 +1,14 @@
-import { roles, availableBanks } from '../../data/sampleData'
+import { roles, availableBanks, availableCompanies } from '../../data/sampleData'
 import { getRoleDisplayName } from '../../utils/rolePermissions'
 
-const Header = ({ 
-  currentRole, 
-  selectedBank, 
-  onRoleChange, 
+const Header = ({
+  currentRole,
+  selectedBank,
+  selectedCompany,
+  onRoleChange,
   onBankSelection,
-  permissions 
+  onCompanySelection,
+  permissions
 }) => {
   const getRoleBadgeClass = (role) => {
     const baseClass = "inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold capitalize"
@@ -87,6 +89,33 @@ const Header = ({
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {/* Company Selector for Company Role */}
+            {currentRole === 'company' && (
+              <div className="flex flex-col gap-2">
+                <label htmlFor="companySelect" className="text-sm font-semibold text-gray-700">
+                  Select Company:
+                </label>
+                <select
+                  id="companySelect"
+                  className="form-input min-w-56"
+                  value={selectedCompany}
+                  onChange={(e) => onCompanySelection(e.target.value)}
+                >
+                  <option value="">Choose a company...</option>
+                  {availableCompanies.map(company => (
+                    <option key={company.id} value={company.name}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedCompany && (
+                  <p className="text-xs text-gray-500 max-w-xs">
+                    {availableCompanies.find(company => company.name === selectedCompany)?.description}
+                  </p>
+                )}
               </div>
             )}
 

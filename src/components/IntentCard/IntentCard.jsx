@@ -1,14 +1,18 @@
 import { format } from 'date-fns'
 import { availableBanks } from '../../data/sampleData'
 
-const IntentCard = ({ 
-  intent, 
-  currentRole, 
+const IntentCard = ({
+  intent,
+  currentRole,
   selectedBank,
-  permissions, 
-  onExpressInterest, 
+  permissions,
+  onExpressInterest,
   onDeleteIntent,
-  hasOngoingDeals 
+  hasOngoingDeals,
+  deals = [],
+  onEvaluateAllOffers,
+  evaluationSummary,
+  isEvaluating
 }) => {
   const formatAmount = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -42,6 +46,37 @@ const IntentCard = ({
     if (permissions.canDelete) {
       onDeleteIntent(intent.id)
     }
+  }
+
+  const handleEvaluateAllOffers = () => {
+    if (onEvaluateAllOffers) {
+      onEvaluateAllOffers(intent.id)
+    }
+  }
+
+  const dealsCount = deals?.length || 0
+  const canRunCompanyEvaluation = currentRole === 'company' && permissions.canViewOpenIntents
+  const hasOfferData = dealsCount > 0
+
+  const renderDecisionBadge = (decision) => {
+    if (!decision) return null
+
+    const normalized = decision.toUpperCase()
+    let badgeClass = 'bg-gray-100 text-gray-700'
+
+    if (normalized.includes('SELECT') || normalized.includes('ACCEPT')) {
+      badgeClass = 'bg-success-100 text-success-800'
+    } else if (normalized.includes('REQUEST') || normalized.includes('COUNTER')) {
+      badgeClass = 'bg-warning-100 text-warning-800'
+    } else if (normalized.includes('DECLINE') || normalized.includes('NO_OFFERS') || normalized.includes('ERROR')) {
+      badgeClass = 'bg-danger-100 text-danger-700'
+    }
+
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${badgeClass}`}>
+        {normalized.replace(/_/g, ' ')}
+      </span>
+    )
   }
 
   return (
@@ -109,8 +144,30 @@ const IntentCard = ({
             Has Active Negotiations
           </div>
         )}
+
+        {currentRole === 'company' && evaluationSummary && (
+          <div className="mt-3 bg-primary-50 border border-primary-200 text-primary-900 rounded-lg p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide">AI ESG Review</span>
+              {renderDecisionBadge(evaluationSummary.decision)}
+            </div>
+            {evaluationSummary.recommendedPartner && (
+              <p className="text-sm font-semibold">
+                Recommended Partner: <span className="text-primary-700">{evaluationSummary.recommendedPartner}</span>
+              </p>
+            )}
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {evaluationSummary.content}
+            </p>
+            {evaluationSummary.generatedAt && (
+              <p className="text-[10px] text-primary-700 uppercase tracking-wide">
+                Generated {new Date(evaluationSummary.generatedAt).toLocaleString()}
+              </p>
+            )}
+          </div>
+        )}
       </div>
-      
+
       {/* Card Actions */}
       {canExpressInterest() && !permissions.isReadOnly && (
         <div className="p-4 pt-3 border-t border-gray-100 bg-gray-50">
@@ -128,6 +185,30 @@ const IntentCard = ({
           <div className="text-center text-xs text-gray-500 italic py-2">
             Select a bank to express interest
           </div>
+        </div>
+      )}
+
+      {canRunCompanyEvaluation && (
+        <div className="p-4 pt-3 border-t border-gray-100 bg-gray-50 space-y-3">
+          <button
+            className={`w-full btn btn-primary ${hasOfferData ? 'hover:scale-105' : 'opacity-70 cursor-not-allowed'} ${isEvaluating ? 'opacity-60 cursor-wait' : ''}`}
+            onClick={handleEvaluateAllOffers}
+            disabled={!hasOfferData || isEvaluating}
+          >
+            {isEvaluating ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Evaluating offers...
+              </div>
+            ) : (
+              'Run ESG Offer Review'
+            )}
+          </button>
+          {!hasOfferData && (
+            <p className="text-xs text-gray-500 text-center">
+              Waiting for banks to submit offers before running the ESG review.
+            </p>
+          )}
         </div>
       )}
     </div>
