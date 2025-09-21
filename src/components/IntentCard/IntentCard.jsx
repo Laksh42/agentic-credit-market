@@ -36,19 +36,34 @@ const IntentCard = ({
     return cleaned.join(', ')
   }
 
+  const normalizedDeals = Array.isArray(deals) ? deals : []
+
+  const bankHasExpressedInterest = currentRole === 'bank' && selectedBank
+    ? normalizedDeals.some(deal => deal.bankName === selectedBank)
+    : false
+
+  const adminNextAvailableBank = availableBanks.find(bank =>
+    !normalizedDeals.some(deal => deal.bankName === bank)
+  )
+
   const handleExpressInterest = () => {
+    if (!onExpressInterest) {
+      return
+    }
+
     if (currentRole === 'admin') {
-      // Admin can express interest as any bank - for demo, let's use first available
-      onExpressInterest(intent.id, availableBanks[0])
-    } else if (currentRole === 'bank' && selectedBank) {
+      if (adminNextAvailableBank) {
+        onExpressInterest(intent.id, adminNextAvailableBank)
+      }
+    } else if (currentRole === 'bank' && selectedBank && !bankHasExpressedInterest) {
       onExpressInterest(intent.id, selectedBank)
     }
   }
 
   const canExpressInterest = () => {
-    if (!permissions.canExpressInterest) return false
-    if (currentRole === 'admin') return true
-    if (currentRole === 'bank' && selectedBank) return true
+    if (!permissions?.canExpressInterest || permissions?.isReadOnly) return false
+    if (currentRole === 'admin') return Boolean(adminNextAvailableBank)
+    if (currentRole === 'bank' && selectedBank) return !bankHasExpressedInterest
     return false
   }
 
@@ -64,7 +79,7 @@ const IntentCard = ({
     }
   }
 
-  const dealsCount = deals?.length || 0
+  const dealsCount = normalizedDeals.length
   const canRunCompanyEvaluation = currentRole === 'company' && permissions.canViewOpenIntents
   const hasOfferData = dealsCount > 0
 
@@ -245,9 +260,9 @@ const IntentCard = ({
       </div>
 
       {/* Card Actions */}
-      {canExpressInterest() && !permissions.isReadOnly && (
+      {canExpressInterest() && !permissions?.isReadOnly && (
         <div className="p-4 pt-3 border-t border-gray-100 bg-gray-50">
-          <button 
+          <button
             className="w-full btn btn-success hover:scale-105 transition-transform duration-200"
             onClick={handleExpressInterest}
           >
@@ -255,7 +270,15 @@ const IntentCard = ({
           </button>
         </div>
       )}
-      
+
+      {currentRole === 'bank' && bankHasExpressedInterest && (
+        <div className="p-4 pt-3 border-t border-gray-100 bg-gray-50">
+          <div className="text-center text-xs text-gray-500 italic py-2">
+            Your bank has already expressed interest in this intent.
+          </div>
+        </div>
+      )}
+
       {currentRole === 'bank' && !selectedBank && (
         <div className="p-4 pt-3 border-t border-gray-100 bg-gray-50">
           <div className="text-center text-xs text-gray-500 italic py-2">
