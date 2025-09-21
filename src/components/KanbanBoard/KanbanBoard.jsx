@@ -13,7 +13,10 @@ const KanbanBoard = ({
   onExpressInterest,
   onCloseDeal,
   onDeleteIntent,
-  onOpenNegotiation
+  onOpenNegotiation,
+  onEvaluateAllOffers,
+  evaluationSummaries,
+  evaluationLoading
 }) => {
   // Filter ongoing deals based on role permissions
   const visibleOngoingDeals = ongoingDeals.filter(deal => 
@@ -90,6 +93,10 @@ const KanbanBoard = ({
                       onExpressInterest={onExpressInterest}
                       onDeleteIntent={onDeleteIntent}
                       hasOngoingDeals={ongoingDealsByIntent[intent.id]?.length > 0}
+                      deals={ongoingDealsByIntent[intent.id] || []}
+                      onEvaluateAllOffers={onEvaluateAllOffers}
+                      evaluationSummary={evaluationSummaries?.[intent.id]}
+                      isEvaluating={!!evaluationLoading?.[intent.id]}
                     />
                   ))}
                 </div>
